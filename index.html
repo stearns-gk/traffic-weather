@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>App Enablement Example | Side Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- App Enablement scripts
+  These scripts are the older version of App Enablement (before V2.5) so there is no more development on them, 
+  but they are simpler to use and they work with all GK POS versions. Documentation available here:
+  https://omnibasket.com/images/internal/AppEnablement-20220516-5210.pdf -->
+  <script type="text/javascript" src="libs/AppEnablementConnector.js"></script>
+  <script type="text/javascript" src="libs/api/Common.js"></script>
+  <script type="text/javascript" src="libs/api/Masterdata.js"></script>
+  <script type="text/javascript" src="libs/api/ExternalMasterdata.js"></script>
+  <script type="text/javascript" src="libs/api/Pos.js"></script>
+
+  <script type="text/javascript">
+    var oAppEnablementCommonInstance = new comGkSoftwareGkrAppEnablementApi.Common();
+    var oAppEnablementExternalMasterdataInstance = new comGkSoftwareGkrAppEnablementApi.ExternalMasterdata();
+    var oAppEnablementMasterdataInstance = new comGkSoftwareGkrAppEnablementApi.Masterdata();
+    var oAppEnablementPosInstance = new comGkSoftwareGkrAppEnablementApi.Pos();
+
+    // Listener that is fired several seconds after the completion of payment for an order. 
+    // Dozens of other listeners are also available.
+    oAppEnablementCommonInstance.registerListener(oAppEnablementCommonInstance.createRegisterListenerRequest("FLOW_EVENT_CUSTOMER_FLOW_PAYMENTEND_TIMER", "processEvent", true));
+
+    function processEvent(oEvent) {
+      switch (oEvent["messageHeader"]["messageKey"]) {
+          case "FLOW_EVENT_CUSTOMER_FLOW_PAYMENTEND_TIMER":
+            console.log("Transaction finished"); // Replace this logging line with your API call to your system to signal transaction completion
+            break;  
+      }
+    }
+
+    // Gets the text of all <li> items in the <ul> with id=itemList, splits the innerText into productName and productPrice,
+    // and calls the function addExternalLineItemToTransaction() for each
+    function addOrderToTransaction() {
+      var ul = document.getElementById("itemList");
+      var li = ul.getElementsByTagName("li");
+      for (var i = 0; i < li.length; ++i) {
+        var myArray = li[i].innerText.split(" ");
+        var productName = myArray[0];  
+        var productPrice = myArray[1];  
+
+        addExternalLineItemToTransaction(productName, productPrice);
+      }
+    }
+
+    // App Enablement allows the developer to add "external items" not in the retailer's master data/price book
+    function addExternalLineItemToTransaction(itemName, itemPrice) {
+      // Required params for the request
+      var oRequest = {
+          "posItemID": "6665556665551", // Currently, all items are given the same itemId
+          "itemID": "66601560156",
+          "unitOfMeasureCode": "PCE", // Piece
+          "itemType": "CO",
+          "actualUnitPrice": itemPrice,
+          "quantity": "1",
+          "receiptText": itemName,
+          "registrationNumber": "66601560156",
+          "mainPOSItemID": "6665556665551",
+          "taxGroupID": "A1", // A1 = Taxable item
+      };
+    
+
+      // In app enablement, there are two options for adding an item to the transaction in 
+      // the GK POS: registerLineItem, and registerExternalLineItem
+
+      // registerLineItem requires the item and its corresponding data to exist in the retailer's master data/price book
+      // registerExternalLineItem allows the App Enablement app to create a new item, new ID, and other params to add to the transaction
+      oAppEnablementPosInstance.registerExternalLineItem('registerDataOk', 'registerDataFailed', JSON.stringify(oRequest));
+    } 
+
+    function registerDataOk() {
+      console.log("Request successful");
+    }
+    
+    function registerDataFailed() {
+      console.log("Error sending request");
+    }
+
+  </script>
+  <script>
+    !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
+  </script>
+</head>
+
+<body>
+  <div>
+    <a class="weatherwidget-io" href="https://forecast7.com/en/35d78n78d64/raleigh/?unit=us" data-label_1="RALEIGH" data-label_2="WEATHER" data-days="3" data-theme="sky" >RALEIGH WEATHER</a>
+  </div>
+  <div style="margin-left: 10%; margin-top: 2%;">
+   <iframe src="https://embed.waze.com/iframe?zoom=13&lat=35.897601&lon=-78.651953pin=1" width="800" height="550" allowfullscreen></iframe>
+  </div>
+</body>
+
+</html>
